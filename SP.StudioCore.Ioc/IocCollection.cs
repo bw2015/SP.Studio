@@ -45,15 +45,14 @@ namespace SP.StudioCore.Ioc
         {
             get
             {
-                //if (Context.Current != null)
-                //{
-                //    return _provider = Context.Current.RequestServices;
-                //}
-                //else 
-                _provider ??= _services?.BuildServiceProvider();
-                return _provider;
+                if (HttpContextService.Current != null)
+                {
+                    return _provider = HttpContextService.Current.RequestServices;
+                }
+                return _provider ??= _services?.BuildServiceProvider();
             }
         }
+
         /// <summary>
         /// 从容器中拿出对象
         /// </summary>

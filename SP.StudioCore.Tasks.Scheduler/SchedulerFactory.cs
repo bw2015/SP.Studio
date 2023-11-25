@@ -19,18 +19,27 @@ namespace SP.StudioCore.Tasks.Scheduler
 
         public static async Task RunAsync(Assembly assembly, params string[] args)
         {
-            Console.WriteLine(assembly.FullName);
+            // 判断任务是否被执行
+            Func<Type, bool> isJob = (type) =>
+            {
+                if (!args.Contains("-job")) return true;
+                return args.Contains(type.Name);
+            };
+
             // 定时器任务
             List<ITaskScheduler> timerTasks = new List<ITaskScheduler>();
             // 多线程任务
             List<ITaskScheduler> threadTasks = new List<ITaskScheduler>();
 
-            foreach (Type type in assembly.GetTypes().Where(t => !t.IsAbstract))
+            foreach (Type type in assembly.GetTypes().Where(t => !t.IsAbstract && isJob(t)))
             {
                 if (typeof(ITaskScheduler).IsAssignableFrom(type))
                 {
                     ITaskScheduler task = (ITaskScheduler)Activator.CreateInstance(type, new[] { args });
-                    TaskSchedulerAttribute scheduler = type.GetCustomAttribute<TaskSchedulerAttribute>();
+                    TaskSchedulerAttribute scheduler = type.GetCustomAttribute<TaskSchedulerAttribute>() ?? new TaskSchedulerAttribute()
+                    {
+                        IsThread = true
+                    };
                     if (scheduler.Crontab)
                     {
                         timerTasks.Add(task);
@@ -86,12 +95,10 @@ namespace SP.StudioCore.Tasks.Scheduler
             {
                 while (true)
                 {
+                    TaskResult result = default;
                     try
                     {
-                        TaskResult result = await task.ExecuteAsync();
-                        // 写入服务日志
-                        handler?.SaveLog(result);
-
+                        result = await task.ExecuteAsync();
                         // 显示
                         handler?.Print(result);
                     }
@@ -102,6 +109,8 @@ namespace SP.StudioCore.Tasks.Scheduler
                     }
                     finally
                     {
+                        // 写入服务日志
+                        handler?.SaveLog(result);
                         await Task.Delay(task.TheadDelay);
                     }
                 }

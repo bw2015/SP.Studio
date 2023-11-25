@@ -45,7 +45,7 @@ namespace SP.StudioCore.Tasks.Scheduler.Attributes
             {
                 return new Crontab()
                 {
-                    second = "*",
+                    second = "0",
                     minute = args[0],
                     hour = args[1],
                     day = args[2],

@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,7 +17,6 @@ namespace SP.StudioCore.Net.Http
             request.Encoding ??= Encoding.UTF8;
 
             HttpContent content = new StringContent(request.PostData ?? string.Empty, request.Encoding, request.mediaType);
-
 
             HttpRequestMessage message = new HttpRequestMessage(request.Method, request.Url);
             foreach (var item in request.Headers)
@@ -32,6 +32,11 @@ namespace SP.StudioCore.Net.Http
                     {
                         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(value.Trim()));
                     }
+                    continue;
+                }
+                if (item.Key.Equals("Referer", StringComparison.OrdinalIgnoreCase))
+                {
+                    message.Headers.Referrer = new Uri(item.Value);
                     continue;
                 }
                 if (item.Key.Equals("Accept-Encoding", StringComparison.OrdinalIgnoreCase))
@@ -50,11 +55,17 @@ namespace SP.StudioCore.Net.Http
                     }
                     continue;
                 }
-                if (item.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase))
+                bool isBreak = false;
+                foreach (string key in new[] { "User-Agent", "Authorization" })
                 {
-                    message.Headers.Add("User-Agent", item.Value);
-                    continue;
+                    if (item.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        message.Headers.TryAddWithoutValidation(key, item.Value);
+                        isBreak = true;
+                        continue;
+                    }
                 }
+                if (isBreak) continue;
                 content.Headers.Add(item.Key, item.Value);
             }
             message.Content = content;

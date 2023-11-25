@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SP.StudioCore.Tasks.Scheduler.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,20 +17,35 @@ namespace SP.StudioCore.Tasks.Scheduler
         /// </summary>
         public Stopwatch sw { get; set; }
 
-        private ITaskScheduler taskScheduler;
 
-        public TaskResult(ITaskScheduler taskScheduler)
+        public TaskResult(ITaskScheduler taskScheduler) : this(taskScheduler.GetType().Name)
         {
-            this.sw = Stopwatch.StartNew();
-            this.taskScheduler = taskScheduler;
-            this.logs = new List<string>();
         }
+
+        public TaskResult(Type type) : this(type.Name)
+        {
+
+        }
+
+        public TaskResult(string name)
+        {
+            this.Name = name;
+            this.sw = Stopwatch.StartNew();
+            this.logs = new List<string>();
+            this.createAt = WebAgent.GetTimestamps();
+        }
+
+        /// <summary>
+        /// 任务的开始时间
+        /// </summary>
+        public long createAt { get; private set; }
 
         private List<string> logs;
 
         public int Length => this.logs?.Count ?? 0;
 
-        public string Name => this.taskScheduler.GetType().Name;
+        public string Name { get; private set; }
+
 
         public void Add(string log)
         {
@@ -45,6 +61,11 @@ namespace SP.StudioCore.Tasks.Scheduler
         public static implicit operator string(TaskResult taskResult)
         {
             return taskResult.ToString();
+        }
+
+        public static implicit operator bool(TaskResult taskResult)
+        {
+            return taskResult.Length > 0;
         }
 
         public override string ToString()
