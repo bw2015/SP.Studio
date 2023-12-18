@@ -53,6 +53,12 @@ namespace SP.StudioCore.Tasks.Scheduler
             this.logs.Add(log);
         }
 
+        public void Add(IEnumerable<string> logs)
+        {
+            this.logs ??= new List<string>();
+            this.logs.AddRange(logs);
+        }
+
         public void Clear()
         {
             this.logs?.Clear();
